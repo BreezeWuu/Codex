@@ -1,3 +1,4 @@
+import './load-env.mjs';
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -56,4 +57,10 @@ export function createServer({ env = process.env, fetchImpl = fetch } = {}) {
     } catch(e) { send(res,502,{error: e.name === 'TimeoutError' ? '生成超时，请稍后重试。' : '生成服务暂时不可用，请检查网络或服务器配置。'}); }
   });
 }
-if (process.argv[1] === fileURLToPath(import.meta.url)) createServer().listen(Number(process.env.PORT || 3000), '0.0.0.0', () => console.log(`Chibi Studio listening on port ${process.env.PORT || 3000}`));
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  if (Number(process.versions.node.split('.')[0]) < 18) {
+    console.error(`Node.js ${process.versions.node} is too old. Install Node.js 22 or newer from https://nodejs.org/ and restart the terminal.`);
+    process.exit(1);
+  }
+  createServer().listen(Number(process.env.PORT || 3000), '0.0.0.0', () => console.log(`Chibi Studio listening on port ${process.env.PORT || 3000}`));
+}
