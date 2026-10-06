@@ -1,0 +1,20 @@
+CHIBI LAB 本地运行
+
+1. 从 https://nodejs.org/ 安装 Node.js 22 或更新版本。
+2. 将整个压缩包解压，不能直接在压缩包里运行。
+3. Windows 双击 start-windows.cmd；macOS 在终端运行 bash start-mac.command。
+4. 首次启动会创建并打开 .env。将 ARK_API_KEY= 后面填入火山实际 API 密钥，保存。
+   IMAGE_MODEL 已配置为 doubao-seedream-5-0-flash-260915。
+5. 出现 Chibi Studio listening on port 3000 后，浏览器访问 http://localhost:3000。
+6. 保持终端窗口打开。Ctrl+C 停止服务。
+
+Linux 或手动运行：
+  cp .env.ark.example .env
+  编辑 .env 填写 ARK_API_KEY
+  npm start
+
+不要双击 index.html 进行生成，它只是静态预览。
+无需 npm install，无需 GPU 或 Python。
+密钥仅存于你电脑的 .env；不要发到聊天或上传代码仓库。
+模型需已开通、支持图片输入与 b64_json 输出，账户需有可用额度。
+真实生成尚未验证。如遇问题，发送错误提示并遮住密钥。
