@@ -1,6 +1,6 @@
 (async () => {
 const $ = id => document.getElementById(id);
-let imageData, mime, style = 'pixel', busy = false, configured = false, previewUrl;
+let imageData, mime, style = 'pixel', busy = false, configured = false, previewUrl, hasResult = false;
 const update = () => { $('generate').disabled = !imageData || busy || !configured; };
 try { const response = await fetch('/api/status', {signal: AbortSignal.timeout(8000)}); if (!response.ok) throw new Error(); const status = await response.json(); configured = status.configured; if(status.transparentSupported === false) { $('background').querySelector('[value=transparent]').disabled=true; $('background').value='white'; } $('output-size').textContent='输出 '+(status.size || '1024 × 1024'); $('status').textContent = configured ? '图像服务凭据已配置 · 每次生成可能产生接口费用' : (status.message || '请配置图像服务并重启。'); } catch { $('status').textContent = '当前是静态预览：上传和风格选择可用，生成需要通过 npm start 启动后端，并配置 IMAGE_API_KEY。'; }
 update();
@@ -12,7 +12,7 @@ async function loadFile(file) {
   try { await probe.decode(); } catch { $('status').textContent='图片无法解码，请选择有效图片。'; return; }
   mime=file.type; imageData=data.split(',')[1];
   if (previewUrl) URL.revokeObjectURL(previewUrl); previewUrl=URL.createObjectURL(file);
-  $('source').src=previewUrl; $('source').hidden=false; $('upload-hint').hidden=true; $('replace').hidden=false;
+  $('source').src=previewUrl, hasResult = false; $('source').hidden=false; $('upload-hint').hidden=true; $('replace').hidden=false;
   $('status').textContent=configured ? '参考图已就绪，选择风格后开始生成。' : '参考图已就绪；请配置 IMAGE_API_KEY 后重启服务器。'; update();
 }
 $('file').addEventListener('change',e=>loadFile(e.target.files[0]).catch(()=>{$('status').textContent='读取图片失败，请重试。';}));
@@ -28,9 +28,9 @@ $('generate').addEventListener('click',async()=>{
   try{
     const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:imageData,mime,style,features:$('features').value,background:$('background').value}),signal:AbortSignal.timeout(260000)});
     const data=await response.json();if(!response.ok)throw new Error(data.error||'生成失败');
-    $('result').src=data.image;$('result').alt='根据上传图片生成的 Q 版角色';$('download').href=data.image; $('download').download=data.mime==='image/jpeg'?'chibi-character.jpg':'chibi-character.png'; $('download').textContent=data.mime==='image/jpeg'?'↓ 下载 JPG':'↓ 下载 PNG';$('download').hidden=false;
+    hasResult=true; $('result').hidden=false; $('result').src=data.image;$('result').alt='根据上传图片生成的 Q 版角色';$('download').href=data.image; $('download').download=data.mime==='image/jpeg'?'chibi-character.jpg':'chibi-character.png'; $('download').textContent=data.mime==='image/jpeg'?'↓ 下载 JPG':'↓ 下载 PNG';$('download').hidden=false;
     $('result-tag').textContent='生成完成';$('result-title').textContent='你的 Q 版角色已登场';$('result-note').textContent=(data.size || '1024 × 1024')+' · '+(data.mime==='image/jpeg'?'JPG':'PNG')+' · '+(style==='pixel'?'像素 Q 版':'插画 Q 版');$('status').textContent='生成完成，可以下载图片；也可以调整特征后重新生成。';
-  }catch(e){$('status').textContent=e.name==='TimeoutError'?'请求超时，请稍后重试。':e.message;}
+  }catch(e){ $('result-tag').textContent='本次生成失败'; $('result').hidden=!hasResult; $('result-title').textContent=hasResult?'保留上次结果':'暂未生成角色'; $('result-note').textContent=hasResult?'本次请求失败，画面是上一次生成的图片。':'接口请求失败，未产生转换结果。请查看左侧错误原因。'; $('status').textContent=e.name==='TimeoutError'?'请求超时，请稍后重试。':e.message;}
   finally{busy=false;$('loading').hidden=true;controls.forEach(c=>c.disabled=false);$('generate').innerHTML='✦ 生成我的 Q 版角色 <span>→</span>';update();}
 });
 

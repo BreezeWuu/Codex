@@ -36,7 +36,7 @@ test('prompt includes recognition constraints and both supported styles',()=>{
 test('Ark adapter sends JSON image-to-image and reports JPEG output',async t=>{
  const url=await running(t,{env:{IMAGE_PROVIDER:'ark',ARK_API_KEY:'test',IMAGE_MODEL:'test-image-model'},fetchImpl:async(endpoint,options)=>{
   assert.equal(endpoint,'https://ark.cn-beijing.volces.com/api/v3/images/generations');
-  const body=JSON.parse(options.body);assert.equal(body.model,'test-image-model');assert.equal(body.image,`data:image/png;base64,${png}`);assert.equal(body.size,'2K');assert.equal(body.response_format,'b64_json');
+  const body=JSON.parse(options.body);assert.equal(body.model,'test-image-model');assert.equal(body.image,`data:image/png;base64,${png}`);assert.equal(body.size,'2K');assert.equal(body.response_format,'url');
   return Response.json({data:[{b64_json:Buffer.from([255,216,255]).toString('base64')}]});
  }});
  assert.equal((await (await fetch(url+'/api/status')).json()).transparentSupported,false);
@@ -47,4 +47,25 @@ test('Ark requires an explicitly configured image model',async t=>{
  const url=await running(t,{env:{ARK_API_KEY:'test'}});
  assert.equal((await (await fetch(url+'/api/status')).json()).configured,false);
  assert.equal((await post(url,{})).status,503);
+});
+test('Ark URL result is downloaded without API key and returned as image data',async t=>{
+ let calls=0;
+ const url=await running(t,{env:{ARK_API_KEY:'test-secret',IMAGE_MODEL:'test-model'},fetchImpl:async(endpoint,options)=>{
+  calls++;
+  if(calls===1) return Response.json({data:[{url:'https://images.tos-cn-beijing.volces.com/result.png?signature=private',size:'2048x2048'}]});
+  assert.equal(options.headers,undefined);assert.equal(options.redirect,'error');
+  return new Response(Buffer.from(png,'base64'));
+ }});
+ const response=await post(url,{image:png,mime:'image/png'});assert.equal(response.status,200);
+ const body=await response.json();assert.equal(body.image,`data:image/png;base64,${png}`);assert.equal(body.size,'2048x2048');assert.equal(calls,2);
+});
+test('structured parameter error is shown with credential and signed URL redacted',async t=>{
+ const url=await running(t,{env:{ARK_API_KEY:'test-secret',IMAGE_MODEL:'test-model'},fetchImpl:async()=>Response.json({error:{message:'Invalid response_format test-secret https://example.com/image?signature=private'}},{status:400})});
+ const response=await post(url,{image:png,mime:'image/png'});const body=await response.json();assert.equal(response.status,502);
+ assert.match(body.error,/Invalid response_format/);assert.doesNotMatch(body.error,/test-secret|signature=private/);
+});
+test('generated URL cannot trigger an arbitrary internal network fetch',async t=>{
+ let calls=0;
+ const url=await running(t,{env:{ARK_API_KEY:'test',IMAGE_MODEL:'test-model'},fetchImpl:async()=>{calls++;return Response.json({data:[{url:'https://127.0.0.1/image'}]});}});
+ assert.equal((await post(url,{image:png,mime:'image/png'})).status,502);assert.equal(calls,1);
 });

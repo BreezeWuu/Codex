@@ -23,7 +23,7 @@ npm start
 
 ### 火山方舟
 
-复制 `.env.ark.example` 为 `.env`，填写 `ARK_API_KEY` 和已开通的图像模型 `IMAGE_MODEL`（Seedream 模型 ID 或对应 ep- 接入点 ID）。密钥管理页本身不决定模型；不能填聊天模型。适配使用北京区域 `/api/v3/images/generations`，将参考图以 data URL 放入 JSON，请求 `b64_json` 和 2K 输出。模型须支持这些参数及图生图。火山模式仅开放白色背景，并根据返回编码提供 JPG 或 PNG 下载。目前只有模拟接口测试通过，真实密钥、模型权限、连通性和生成质量尚待验证。
+复制 `.env.ark.example` 为 `.env`，填写 `ARK_API_KEY` 和已开通的图像模型 `IMAGE_MODEL`（Seedream 模型 ID 或对应 ep- 接入点 ID）。密钥管理页本身不决定模型；不能填聊天模型。适配使用北京区域 `/api/v3/images/generations`，将参考图以 data URL 放入 JSON，请求 URL 格式和 2K 输出，服务器从火山图片域名下载后返回可下载的图像数据。模型须支持这些参数及图生图。火山模式仅开放白色背景，并根据返回编码提供 JPG 或 PNG 下载。目前只有模拟接口测试通过，真实密钥、模型权限、连通性和生成质量尚待验证。
 
 在 Codex 环境设置中填写密钥时，目标变量名为 `ARK_API_KEY`，允许目标域名为 `ark.cn-beijing.volces.com`。填写 `IMAGE_PROVIDER=ark`、`IMAGE_API_BASE_URL=https://ark.cn-beijing.volces.com/api/v3` 和 `IMAGE_MODEL`，保存后重启服务。仅在火山控制台创建密钥不会自动注入本项目。
 
